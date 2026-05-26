@@ -1,4 +1,3 @@
-
 package ru.samsung.gamestudio.characters;
 
 import static ru.samsung.gamestudio.MyGdxGame.SCR_HEIGHT;
@@ -6,75 +5,94 @@ import static ru.samsung.gamestudio.MyGdxGame.SCR_HEIGHT;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Batch;
-
 public class Bird {
 
-    int x, y;
-    int width, height;
+    public int x, y;
 
-    int speed;
-    int jumpHeight;
-    final int maxHeightOfJump = 100;
-    boolean jump = true;
+    public int width, height;
 
-    int frameCounter;
     Texture[] framesArray;
 
-    public Bird(int x, int y, int speed, int width, int height) {
+    int frameCounter = 0;
+
+    // земля
+    final int groundY = 170;
+
+    // физика
+    float velocityY = 0;
+
+    float gravity = -1.2f;
+
+    float jumpForce = 25;
+
+    boolean onGround = true;
+
+    public Bird(int x, int y, int width, int height) {
+
         this.x = x;
         this.y = y;
-        this.speed = speed;
+
         this.width = width;
         this.height = height;
-        frameCounter = 0;
 
         framesArray = new Texture[]{
-                new Texture("birdTiles/bird0.png"),
-                new Texture("birdTiles/bird1.png"),
-                new Texture("birdTiles/bird2.png"),
-                new Texture("birdTiles/bird1.png"),
+                new Texture("cat1.png"),
+                new Texture("cat2.png"),
+                new Texture("cat3.png"),
+                new Texture("cat2.png"),
         };
     }
 
-    public void setY(int y) {
-        this.y = y;
-    }
-
+    // прыжок
     public void onClick() {
-        jump = true;
-        jumpHeight = maxHeightOfJump + y;
-    }
 
-    public void fly() {
-        if (y >= jumpHeight) {
-            jump = false;
-        }
+        if (onGround) {
 
-        if (jump) {
-            y += speed;
-        } else {
-            y -= speed;
+            velocityY = jumpForce;
+
+            onGround = false;
         }
     }
 
-    public boolean isInField() {
-        if (y + height < 0) return false;
-        if (y > SCR_HEIGHT) return false;
-        return true;
+    // физика
+    public void update() {
+
+        velocityY += gravity;
+
+        y += velocityY;
+
+        // земля
+        if (y <= groundY) {
+
+            y = groundY;
+
+            velocityY = 0;
+
+            onGround = true;
+        }
     }
 
     public void draw(Batch batch) {
-        int frameMultiplier = 10;
-        batch.draw(framesArray[frameCounter / frameMultiplier], x, y, width, height);
-        if (frameCounter++ == framesArray.length * frameMultiplier - 1) frameCounter = 0;
-    }
 
-    public void dispose() {
-        for (Texture texture : framesArray) {
-            texture.dispose();
+        int anim = 10;
+
+        batch.draw(
+                framesArray[frameCounter / anim],
+                x,
+                y,
+                width,
+                height
+        );
+
+        if (frameCounter++ >= framesArray.length * anim - 1) {
+            frameCounter = 0;
         }
     }
 
+    public void dispose() {
+
+        for (Texture t : framesArray) {
+            t.dispose();
+        }
+    }
 }

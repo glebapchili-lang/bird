@@ -1,142 +1,245 @@
 package ru.samsung.gamestudio.screens;
 
-import static ru.samsung.gamestudio.MyGdxGame.SCR_HEIGHT;
-import static ru.samsung.gamestudio.MyGdxGame.SCR_WIDTH;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.ScreenUtils;
+
 import ru.samsung.gamestudio.MyGdxGame;
 import ru.samsung.gamestudio.characters.Bird;
-import ru.samsung.gamestudio.characters.Tube;
+import ru.samsung.gamestudio.characters.Enemy;
 import ru.samsung.gamestudio.components.MovingBackground;
 import ru.samsung.gamestudio.components.PointCounter;
 
+import static ru.samsung.gamestudio.MyGdxGame.*;
+
 public class ScreenGame implements Screen {
 
-    final int pointCounterMarginTop = 60;
-    final int pointCounterMarginRight = 400;
-
-    MyGdxGame myGdxGame;
+    MyGdxGame game;
 
     Bird bird;
-    PointCounter pointCounter;
+
+    Enemy enemy;
+
+    // фон
     MovingBackground background;
 
-    int tubeCount = 3;
-    Tube[] tubes;
-    public String bg= "game_bg.png";
+    // дорога
+    Texture ground;
 
-    int gamePoints;
-    boolean isGameOver;
+    // очки
+    PointCounter pointCounter;
 
-    public ScreenGame(MyGdxGame myGdxGame) {
-        this.myGdxGame = myGdxGame;
+    int score;
 
-        initTubes();
-        background = new MovingBackground(bg);
-        bird = new Bird(20, SCR_HEIGHT / 2, 10, 250, 200);
-        pointCounter = new PointCounter(SCR_WIDTH - pointCounterMarginRight, SCR_HEIGHT - pointCounterMarginTop);
+    boolean gameOver;
+
+    float speed = 12;
+
+    float maxSpeed = 28;
+
+    // позиция дороги
+    float groundX = 0;
+
+    public ScreenGame(MyGdxGame game) {
+
+        this.game = game;
+
+        // фон
+        background = new MovingBackground(
+                "Background.png",
+                1
+        );
+
+        // дорога
+        ground = new Texture("Foreground.png");
+
+        // очки
+        pointCounter = new PointCounter(
+                40,
+                680
+        );
+
+        // игрок
+        bird = new Bird(
+                100,
+                190,
+                160,
+                120
+        );
+
+        spawnEnemy();
     }
 
+    void spawnEnemy() {
+
+        int random = (int)(Math.random() * 10);
+
+        if (random < 4) {
+
+            enemy = new Enemy("rock");
+
+        } else if (random < 8) {
+
+            enemy = new Enemy("spike");
+
+        } else {
+
+            enemy = new Enemy("bird");
+        }
+    }
 
     @Override
     public void show() {
-        gamePoints = 0;
-        isGameOver = false;
-        bird.setY(SCR_HEIGHT / 2);
-        background = new MovingBackground(bg);
-        initTubes();
+
+        score = 0;
+
+        gameOver = false;
+
+        speed = 12;
+
+        bird.y = 190;
+
+        spawnEnemy();
     }
 
     @Override
     public void render(float delta) {
 
+        // game over
+        if (gameOver) {
 
-        if (isGameOver) { myGdxGame.screenRestart.gamePoints = gamePoints; myGdxGame.setScreen(myGdxGame.screenRestart); }
+            game.screenRestart.gamePoints = score;
 
+            game.setScreen(game.screenRestart);
+        }
 
-
-
-
+        // jump
         if (Gdx.input.justTouched()) {
-            bird.onClick();
-        }
 
-        background.move();
-        bird.fly();
-        if (!bird.isInField()) {
-            System.out.println("not in field");
-            isGameOver = true;
-        }
-        for (Tube tube : tubes) {
-            tube.move();
-            if (tube.isHit(bird)) {
-                isGameOver = true;
-                System.out.println("hit");
-            } else if (tube.needAddPoint(bird)) {
-                gamePoints += 1;
-                tube.setPointReceived();
-                System.out.println(gamePoints);
+            bird.onClick();
+
+            if (game.soundOn) {
+
+                game.jumpSound.play();
             }
         }
 
+        // speed
+        speed += 0.003f;
 
-        myGdxGame.batch.begin();
-        background.draw(myGdxGame.batch);
-        myGdxGame.batch.end();
+        if (speed > maxSpeed) {
 
-        ScreenUtils.clear(1, 0, 0, 1);
-        myGdxGame.camera.update();
-        myGdxGame.batch.setProjectionMatrix(myGdxGame.camera.combined);
-        myGdxGame.batch.begin();
+            speed = maxSpeed;
+        }
 
-        background.draw(myGdxGame.batch);
-        bird.draw(myGdxGame.batch);
-        for (Tube tube : tubes) tube.draw(myGdxGame.batch);
-        pointCounter.draw(myGdxGame.batch, gamePoints);
+        // движение фона
+        background.move();
 
-        myGdxGame.batch.end();
+        // движение дороги
+        groundX -= speed;
 
+        if (groundX <= -SCR_WIDTH) {
 
+            groundX = 0;
+        }
+
+        // physics
+        bird.update();
+
+        enemy.move(speed);
+
+        // новый враг
+        if (enemy.x < -300) {
+
+            enemy.dispose();
+
+            spawnEnemy();
+        }
+
+        // collision
+        if (enemy.isHit(
+                bird.x,
+                bird.y,
+                bird.width,
+                bird.height
+        )) {
+
+            gameOver = true;
+        }
+
+        // score
+        score++;
+
+        // рекорд
+        if (score > game.bestScore) {
+
+            game.bestScore = score;
+        }
+
+        // render
+        ScreenUtils.clear(0, 0, 0, 1);
+
+        game.camera.update();
+
+        game.batch.setProjectionMatrix(
+                game.camera.combined
+        );
+
+        game.batch.begin();
+
+        // фон
+        background.draw(game.batch);
+
+        // дорога
+        game.batch.draw(
+                ground,
+                groundX,
+                5,
+                SCR_WIDTH,
+                1000
+        );
+
+        game.batch.draw(
+                ground,
+                groundX + SCR_WIDTH,
+                5,
+                SCR_WIDTH,
+                1000
+        );
+
+        // игрок
+        bird.draw(game.batch);
+
+        // враг
+        enemy.draw(game.batch);
+
+        // очки
+        pointCounter.draw(
+                game.batch,
+                score
+        );
+
+        game.batch.end();
     }
 
-    @Override
-    public void resize(int width, int height) {
+    @Override public void resize(int w, int h) {}
+    @Override public void pause() {}
+    @Override public void resume() {}
 
-    }
-
-    @Override
-    public void pause() {
-
-    }
-
-    @Override
-    public void resume() {
-
-    }
-
-    @Override
-    public void hide() {
-
-    }
+    @Override public void hide() {}
 
     @Override
     public void dispose() {
-        bird.dispose();
+
         background.dispose();
+
+        ground.dispose();
+
+        bird.dispose();
+
+        enemy.dispose();
+
         pointCounter.dispose();
-        for (int i = 0; i < tubeCount; i++) {
-            tubes[i].dispose();
-        }
     }
-
-    void initTubes() {
-        tubes = new Tube[tubeCount];
-        for (int i = 0; i < tubeCount; i++) {
-            tubes[i] = new Tube(tubeCount, i);
-        }
-    }
-
 }
-

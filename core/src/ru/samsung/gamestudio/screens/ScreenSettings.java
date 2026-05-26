@@ -9,33 +9,32 @@ import ru.samsung.gamestudio.MyGdxGame;
 import ru.samsung.gamestudio.components.MovingBackground;
 import ru.samsung.gamestudio.components.TextButton;
 
-public class ScreenMenu implements Screen {
+public class ScreenSettings implements Screen {
 
     MyGdxGame game;
 
     MovingBackground background;
 
-    TextButton buttonStart;
-    TextButton buttonSettings;
-    TextButton buttonExit;
+    TextButton musicButton;
 
-    public ScreenMenu(MyGdxGame game) {
+    TextButton backButton;
+
+    public ScreenSettings(MyGdxGame game) {
 
         this.game = game;
 
-        background = new MovingBackground("hi.png",1);
+        background = new MovingBackground(
+                "restart_bg.png",
+                1
+        );
 
-        buttonStart = new TextButton(465, 420, "START");
+        musicButton = new TextButton(390, 420, "MUSIC");
 
-        buttonSettings = new TextButton(465, 280, "SETTINGS");
-
-        buttonExit = new TextButton(465, 140, "EXIT");
+        backButton = new TextButton(390, 200, "BACK");
     }
 
     @Override
     public void render(float delta) {
-
-        background.move();
 
         if (Gdx.input.justTouched()) {
 
@@ -47,21 +46,29 @@ public class ScreenMenu implements Screen {
                     )
             );
 
-            if (buttonStart.isHit((int) touch.x, (int) touch.y)) {
+            // MUSIC
+            if (musicButton.isHit((int) touch.x, (int) touch.y)) {
 
-                game.setScreen(game.screenGame);
+                game.musicOn = !game.musicOn;
+
+                if (game.musicOn) {
+                    game.music.play();
+                } else {
+                    game.music.pause();
+                }
             }
 
-            if (buttonSettings.isHit((int) touch.x, (int) touch.y)) {
 
-                game.setScreen(game.screenSettings);
-            }
 
-            if (buttonExit.isHit((int) touch.x, (int) touch.y)) {
 
-                Gdx.app.exit();
+            if (backButton.isHit((int) touch.x, (int) touch.y)) {
+
+                game.setScreen(game.screenMenu);
             }
         }
+
+
+        background.move();
 
         ScreenUtils.clear(0, 0, 0, 1);
 
@@ -73,17 +80,16 @@ public class ScreenMenu implements Screen {
 
         background.draw(game.batch);
 
-        buttonStart.draw(game.batch);
 
-        buttonSettings.draw(game.batch);
+        musicButton.draw(game.batch);
 
-        buttonExit.draw(game.batch);
+        backButton.draw(game.batch);
 
         game.batch.end();
     }
 
     @Override public void show() {}
-    @Override public void resize(int w, int h) {}
+    @Override public void resize(int width, int height) {}
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
@@ -93,10 +99,8 @@ public class ScreenMenu implements Screen {
 
         background.dispose();
 
-        buttonStart.dispose();
+        musicButton.dispose();
 
-        buttonSettings.dispose();
-
-        buttonExit.dispose();
+        backButton.dispose();
     }
 }
